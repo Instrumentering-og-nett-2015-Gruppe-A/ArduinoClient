@@ -23,7 +23,7 @@
 
 void setlcdinfo(String line1, String line2) {
   // initialize the library with the numbers of the interface pins
-  LiquidCrystal lcd(12, 11, 5, 4, 3, 2);
+  LiquidCrystal lcd(7, 6, 5, 4, 3, 2);
   // set up the LCD's number of columns and rows:
   lcd.begin(16, 2);
   // Remove characters that do not fit on LCD
@@ -39,7 +39,7 @@ void setlcdinfo(String line1, String line2) {
 }
 
 void setup() {
-  setlcdinfo("Dette er en", "postboks");
+  setlcdinfo("Dette er ikke en", "postboks");
 }
 
 void loop() {
