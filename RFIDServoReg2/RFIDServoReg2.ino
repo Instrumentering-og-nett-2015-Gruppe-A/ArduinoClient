@@ -9,7 +9,7 @@ MFRC522 mfrc522(SS_PIN, RST_PIN);
 Servo servo;
 const int open = 70;
 const int locked = 160;
-const int button = 8;
+const int button = 2;
 
 byte readCard[4];
 byte access[4];
@@ -33,7 +33,7 @@ void setup() {
   SPI.begin();
   mfrc522.PCD_Init();
   servo.attach(5);
-  pinMode(button, INPUT);
+  pinMode(button, INPUT_PULLUP);
 
   Serial.println("Scan RFID card");
   Serial.println();
@@ -91,8 +91,9 @@ void openBox() {
  */
 void registerCard() {
 
-  if (digitalRead(button) == HIGH) {
+  if (digitalRead(button) != HIGH) {
     Serial.println("Scan new card within 10 seconds");
+    Serial.println();
     for (int i = 0; i < 10000; i += 200) {
       if (mfrc522.PICC_IsNewCardPresent()) {
         if (mfrc522.PICC_ReadCardSerial()) {
@@ -102,6 +103,7 @@ void registerCard() {
             access[j] = mfrc522.uid.uidByte[j];
             Serial.print(mfrc522.uid.uidByte[j], HEX);
           }
+          Serial.println();
           Serial.println();
           Serial.println("New card added to EEPROM");
           Serial.println();
