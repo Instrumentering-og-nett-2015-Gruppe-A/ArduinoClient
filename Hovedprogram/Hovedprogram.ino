@@ -4,13 +4,17 @@
  * 3:  trigPin
  * 4:  
  * 5:  servo
- * 7:
- * 8:              * MEGA *
- * 9:  SPI_RST  //  Definer selv
- * 10: SPI_SS   //  53
- * 11: SPI_MOSI //  51
- * 12: SPI_MISO //  50
- * 13: SPI SCK  //  52
+ * 6:  LCD_D7
+ * 7:  LCD_D6
+ * 8:  LCD_D5
+ * 9:  LCD_D4
+ * 28: LCD_E
+ * 29: LCD_RS
+ * 49: SPI_RST
+ * 53: SPI_SS   
+ * 51: SPI_MOSI 
+ * 50: SPI_MISO 
+ * 52: SPI SCK  
  *
  * SPENNINGSOVERSIKT:
  * RFID:     3.3V
@@ -68,26 +72,39 @@ int minRange = 20;
 float duration, distance;
 boolean gotMail = false;
 
+////////LCD DISPLAY////////
+#include <LiquidCrystal.h>
+LiquidCrystal lcd(30,28,9,8,7,6);
+
+
 void setup() {
   Serial.begin(38400);
   SPI.begin();
   
+  ////////Setup LCD////////
+  lcd.begin(16,2);
+  lcd.setCursor(3,0);
+  lcd.print("Welcome to");
+  lcd.setCursor(4,1);
+  lcd.print("SmartBOX");
+  
   ////////Setup for Servo////////
   servo.attach(5);
-  
+
   ////////Setup for registerCard og openBox////////
   mfrc522.PCD_Init();
   pinMode(button, INPUT_PULLUP);
-  Serial.println("Scan RFID card");
-  Serial.println();
-
   for (int i = 0; i < 4; i++) {   //Leser inn serienummer som er  
     access[i] = EEPROM.read(i);   //lagret i EEPROM til access.
   }
+  
   ///////Setup for ultralyd///////
   pinMode(echoPin, INPUT);
   pinMode(trigPin, OUTPUT);
   pinMode(ledPin, OUTPUT);
+  
+  delay(5000);
+  lcd.clear();
 }
 
 void loop() {
@@ -98,6 +115,9 @@ void loop() {
     checkMail.disable();
     digitalWrite(13, HIGH); //informer server om at det er post
     return;
+  }
+  else {
+    digitalWrite(13, LOW);
   }
 }
 
@@ -117,12 +137,18 @@ void openBox() {
 
       if (isArraysEqual(readCard, access)) {
         wrongCard = false;
+        lcd.clear();
+        lcd.print("Correct card.");
+        lcd.setCursor(0,1);
+        lcd.print("Opening mailbox!");
         Serial.println();
         Serial.println("Correct card. Opening mailbox!");
         Serial.println();
       } 
       else {
         wrongCard = true;
+        lcd.clear();
+        lcd.print("Wrong RFID-card!");
         Serial.println();
         Serial.println("Wrong RFID-card!");
         Serial.println();
@@ -207,6 +233,7 @@ void mailDetected()
     Serial.println("No mail detected");
   }
 }
+
 
 
 
