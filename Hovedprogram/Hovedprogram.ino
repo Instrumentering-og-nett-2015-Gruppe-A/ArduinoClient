@@ -2,7 +2,7 @@
  * 1:  button, knapp for å registrere RFID-kort
  * 2:  echoPin
  * 3:  trigPin
- * 4:  
+ * 4:
  * 5:  servo
  * 6:  LCD_D7
  * 7:  LCD_D6
@@ -11,10 +11,10 @@
  * 28: LCD_E
  * 29: LCD_RS
  * 49: SPI_RST
- * 53: SPI_SS   
- * 51: SPI_MOSI 
- * 50: SPI_MISO 
- * 52: SPI SCK  
+ * 53: SPI_SS
+ * 51: SPI_MOSI
+ * 50: SPI_MISO
+ * 52: SPI SCK
  *
  * SPENNINGSOVERSIKT:
  * RFID:     3.3V
@@ -61,7 +61,7 @@ boolean isArraysEqual(byte array_1[], byte array_2[]) {
 ////////ULTRALYDSENSOR////////
 #include <TimedAction.h>
 
-TimedAction checkMail = TimedAction(1000,mailDetected);
+TimedAction checkMail = TimedAction(1000, mailDetected);
 
 const int echoPin = 3;
 const int trigPin = 2;
@@ -74,47 +74,53 @@ boolean gotMail = false;
 
 ////////LCD DISPLAY////////
 #include <LiquidCrystal.h>
-LiquidCrystal lcd(30,28,9,8,7,6);
-
+LiquidCrystal lcd(30, 28, 9, 8, 7, 6);
+unsigned long interval = 5000;
+unsigned long previousMillis = 0;
+unsigned long currentMillis = 0;
+boolean isClear = false;
 
 void setup() {
   Serial.begin(38400);
   SPI.begin();
-  
+
   ////////Setup LCD////////
-  lcd.begin(16,2);
-  lcd.setCursor(3,0);
+  lcd.begin(16, 2);
+  lcd.setCursor(3, 0);
   lcd.print("Welcome to");
-  lcd.setCursor(4,1);
+  lcd.setCursor(4, 1);
   lcd.print("SmartBOX");
-  
+
+
   ////////Setup for Servo////////
   servo.attach(5);
+  servo.write(locked);
 
   ////////Setup for registerCard og openBox////////
   mfrc522.PCD_Init();
   pinMode(button, INPUT_PULLUP);
-  for (int i = 0; i < 4; i++) {   //Leser inn serienummer som er  
+  for (int i = 0; i < 4; i++) {   //Leser inn serienummer som er
     access[i] = EEPROM.read(i);   //lagret i EEPROM til access.
   }
-  
+
   ///////Setup for ultralyd///////
   pinMode(echoPin, INPUT);
   pinMode(trigPin, OUTPUT);
   pinMode(ledPin, OUTPUT);
-  
+
   delay(5000);
   lcd.clear();
+  lcd.print("EiT mailbox");
 }
 
 void loop() {
+  clrLcd();
   registerCard();
   openBox();
   checkMail.check();
   if (gotMail) {
     checkMail.disable();
     digitalWrite(13, HIGH); //informer server om at det er post
-    return;
   }
   else {
     digitalWrite(13, LOW);
@@ -139,19 +145,15 @@ void openBox() {
         wrongCard = false;
         lcd.clear();
         lcd.print("Correct card.");
-        lcd.setCursor(0,1);
+        lcd.setCursor(0, 1);
         lcd.print("Opening mailbox!");
-        Serial.println();
-        Serial.println("Correct card. Opening mailbox!");
-        Serial.println();
-      } 
+        rstLcd();
+      }
       else {
         wrongCard = true;
         lcd.clear();
         lcd.print("Wrong RFID-card!");
-        Serial.println();
-        Serial.println("Wrong RFID-card!");
-        Serial.println();
+        rstLcd();
       }
       if (!wrongCard) {
         servo.write(open);
@@ -175,28 +177,49 @@ void openBox() {
  */
 void registerCard() {
   if (digitalRead(44) != HIGH) {
-    Serial.println("Scan new card within 10 seconds");
-    Serial.println();
     for (int i = 0; i < 10000; i += 200) {
+      if (
+        i == 1000 ||
+        i == 2000 ||
+        i == 3000 ||
+        i == 4000 ||
+        i == 5000 ||
+        i == 6000 ||
+        i == 7000 ||
+        i == 8000 ||
+        i == 9000 ||
+        i == 10000
+      ) {
+        Serial.print(i / 1000 % 1);
+        lcd.clear();
+        lcd.print("Scan new card");
+        lcd.setCursor(0, 1);
+        lcd.print("within ");
+        lcd.print(10 - (i / 1000));
+        lcd.print(" second");
+      }
       if (mfrc522.PICC_IsNewCardPresent()) {
         if (mfrc522.PICC_ReadCardSerial()) {
-          Serial.println("Scanned RFID:");
           for (int j = 0; j < 4; j++) {
             EEPROM.write(j, mfrc522.uid.uidByte[j]);
             access[j] = mfrc522.uid.uidByte[j];
-            Serial.print(mfrc522.uid.uidByte[j], HEX);
           }
-          Serial.println();
-          Serial.println();
-          Serial.println("New card added to EEPROM");
-          Serial.println();
+          lcd.clear();
+          lcd.print("New card added");
+          lcd.setCursor(0, 1);
+          lcd.print("to EEPROM");
+          rstLcd();
           mfrc522.PICC_HaltA(); // Stop reading
           return;
         }
       }
       delay(200);
     }
-    Serial.println("Card could not be read!");
+    lcd.clear();
+    lcd.print("Card could not");
+    lcd.setCursor(0, 1);
+    lcd.print("be read");
+    rstLcd();
   }
 }
 
@@ -214,11 +237,11 @@ void mailDetected()
   delayMicroseconds(10);
 
   duration = pulseIn(echoPin, HIGH); //i microsekunder
-  distance = duration/58.2;          //lyden beveger seg med 29.1 µm/s, så vi må dele tiden på 2*v
+  distance = duration / 58.2;        //lyden beveger seg med 29.1 µm/s, så vi må dele tiden på 2*v
 
   if (distance >= maxRange || distance <= minRange && gotMail != true) {
     confirmMail += 1;
-    Serial.println(distance);
+    //Serial.println(distance);
     if (confirmMail > 9) {
       gotMail = true;
       Serial.println(distance);
@@ -234,7 +257,17 @@ void mailDetected()
   }
 }
 
+void clrLcd() {
+  currentMillis = millis();
+  if ((currentMillis - previousMillis) >= interval && isClear == true) {
+    lcd.clear();
+    lcd.print("EiT mailbox");
+    isClear = false;
+  }
+}
 
-
-
+void rstLcd() {
+  isClear = true;
+  previousMillis = millis();
+}
 
