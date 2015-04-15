@@ -8,6 +8,8 @@
  * 7:  LCD_D6
  * 8:  LCD_D5
  * 9:  LCD_D4
+ * 20: WIFI_Tx
+ * 21: WIFI_Rx
  * 28: LCD_E
  * 29: LCD_RS
  * 49: SPI_RST
@@ -33,7 +35,7 @@ const int RST_PIN = 49;
 ////////SERVO////////
 #include <Servo.h>
 Servo servo;
-const int open = 0;
+const int open = -10;
 const int locked = 70;
 
 ////////RFID&EEPROM////////
@@ -108,7 +110,7 @@ void setup() {
   pinMode(trigPin, OUTPUT);
   pinMode(ledPin, OUTPUT);
 
-  delay(5000);
+  delay(3000);
   lcd.clear();
   lcd.print("EiT mailbox");
 }
@@ -178,18 +180,7 @@ void openBox() {
 void registerCard() {
   if (digitalRead(44) != HIGH) {
     for (int i = 0; i < 10000; i += 200) {
-      if (
-        i == 1000 ||
-        i == 2000 ||
-        i == 3000 ||
-        i == 4000 ||
-        i == 5000 ||
-        i == 6000 ||
-        i == 7000 ||
-        i == 8000 ||
-        i == 9000 ||
-        i == 10000
-      ) {
+      if (i % 1000 == 0) {
         Serial.print(i / 1000 % 1);
         lcd.clear();
         lcd.print("Scan new card");
