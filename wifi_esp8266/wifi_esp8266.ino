@@ -2,10 +2,10 @@
 #include <aJSON.h>
 #define DEBUG true
 #define dbg Serial  // USB local debug
-#define RESPONSE_LENGTH 155 // Bytes to allocate for response strings
-#define PUSH_BUTTON 2  // The number of the pin connected to button
-#define RX 11  // The pin to recieve data from wifi module
-#define TX 12  // The pin to transmit data to wifi module
+#define RESPONSE_LENGTH 500 // Bytes to allocate for response strings
+#define PUSH_BUTTON 44  // The number of the pin connected to button
+#define RX 10  // The pin to recieve data from wifi module
+#define TX 21  // The pin to transmit data to wifi module
 #define IS_JSON true  // For returning Json from server response
 #define SSID F("Eiriknett")
 #define PASS F("safford001")
@@ -18,15 +18,15 @@ String wifi_pass;
 String wifi_serverip;
 String wifi_serverport;
 
-//////////////////////////////
-// Nå begynner JSON-stuff! //
+  //////////////////////////////
+ // Nå begynner JSON-stuff! //
 ////////////////////////////
 namespace JSON{
   char* updateMailboxStatus(boolean hasMail){
     
     aJsonObject *body;
     body=aJson.createObject();
-  
+   
     if (hasMail == false){
       aJson.addBooleanToObject(body, "has_mail", false);
     }
@@ -106,29 +106,29 @@ void wifi_init(String ssid, String pass) {
   wifi_serverip = "192.168.1.6";
   wifi_serverport = "4999";
   
-  pinMode(PUSH_BUTTON, INPUT);
-  pinMode(3, OUTPUT);
-  pinMode(4, OUTPUT);
-  pinMode(5, OUTPUT);
-  pinMode(6, OUTPUT);
-  pinMode(7, OUTPUT);
-  pinMode(8, OUTPUT);
-  pinMode(9, OUTPUT);
-  pinMode(10, OUTPUT);
-  pinMode(13, OUTPUT); // For debugging purposes w/o USB
+  pinMode(PUSH_BUTTON, INPUT_PULLUP);
+//  pinMode(3, OUTPUT);
+//  pinMode(4, OUTPUT);
+//  pinMode(5, OUTPUT);
+//  pinMode(6, OUTPUT);
+//  pinMode(7, OUTPUT);
+//  pinMode(8, OUTPUT);
+//  pinMode(9, OUTPUT);
+//  pinMode(10, OUTPUT);
+//  pinMode(13, OUTPUT); // For debugging purposes w/o USB
   // Set baud rates
-  digitalWrite(13, HIGH);
+ // digitalWrite(13, HIGH);
   esp.begin(9600);
   dbg.begin(9600);
   
   dbg.println(F("DEBUG: Running Setup"));
   
-  sendData("AT+RST\r\n", 2000); // reset module
-  sendData("AT\r\n", 2000); // reset module
-  sendData("AT+CWMODE=1\r\n", 1000); // configure as access point
-  sendData("AT+CWJAP=\"" + ssid + "\",\"" + pass + "\"\r\n", 6000); // configure as access point
-  sendData("AT+CIPMUX=0\r\n", 2000); // reset module
-  send_esp_command("AT+CIFSR\r\n", 1000); // get ip address
+  sendData("AT+RST\r\n", 2000);  // reset module
+  sendData("AT\r\n", 2000);  // reset module
+  sendData("AT+CWMODE=1\r\n", 1000);  // configure as access point
+  sendData("AT+CWJAP=\"" + ssid + "\",\"" + pass + "\"\r\n", 6000);  // configure as access point
+  sendData("AT+CIPMUX=0\r\n", 2000);  // reset module
+  sendData("AT+CIFSR\r\n", 1000);  // get ip address
 
   dbg.println(F("DEBUG: Setup complete\n\n"));
 }
@@ -184,12 +184,12 @@ char *sendRequest(String method, String resource, char *data) {
                               + "Accept: */*\r\n"
                               + "Content-Type: application/json\r\n"
                               + "Content-Length: " + strlen(data) + "\r\n\r\n"
-							  + data + "\r\n";
+                              + data + "\r\n";
   String cmd = "AT+CIPSEND=";
   dbg.println(F("This request is sent to server:"));
   dbg.println(httpRequest);
   cmd += httpRequest.length();
-  cmd += "\r\n"; // important
+  cmd += "\r\n";  // important
   sendData(cmd, 1000);  // Make wifi-module ready for sending request
   char *httpResponse;
   httpResponse = sendData(httpRequest, 1000, IS_JSON);
@@ -211,43 +211,17 @@ void update_mailbox_status(bool hasmail, String id) {
   free(status_json);
   //dbg.println(status_json);
 }
-
-char* send_esp_command(String command, int timeout) {
-  static char response[RESPONSE_LENGTH];
-  memset(response, '\0', RESPONSE_LENGTH);
-  esp.print(command);
-  long int time = millis();
-  int i = 0;
-  while ( (time + timeout) > millis()) {
-    while (esp.available() && i < RESPONSE_LENGTH) {
-      // The esp has data and the buffer is not full
-      char c = esp.read(); // read the next character.
-      response[i] = c;
-      i++;
-    }
-  }
-  dbg.print(response);
-  return response;
-}
-
-void listen_for_serverip() {
-  send_esp_command("AT+CIPMUX=1\r\n", 1000);  // Start a multi line
-  send_esp_command("AT+CIPSERVER=1,53005\r\n", 5000);  // Set server to listen to the specified port
-  dbg.print(send_esp_command("+IPD,5\r\n", 5000));
-  //send_esp_command("AT+CIPSTO=120\r\n");  // Set time out for server connect
-  //send_esp_command("AT+CIPSTART=4,\"UDP\",\"255.255.255.255\",53005\r\n"); // open UDP connection
-
-}
   
 void setup() {
   wifi_init(SSID,PASS);
+  dbg.println(wifi_mailbox_by_id("2"));
 }
 
 void loop() {
-  if (digitalRead(PUSH_BUTTON) == 1) {
+  if (digitalRead(PUSH_BUTTON) == 0) {
     dbg.println(F("DEBUG: Button push detected"));
-    listen_for_serverip();
-	  //dbg.println(wifi_mailbox_by_id("2"));
+    //listen_for_serverip();
+    dbg.println(wifi_mailbox_by_id("2"));
     //dbg.println(wifi_register_mailbox());
     //update_mailbox_status(true, "2");
     dbg.println(F("end loop"));
